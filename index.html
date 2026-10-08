@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f4f7fb">
+  <title>여러 사업 실적 통합</title>
+  <link rel="stylesheet" href="styles.css">
+  <script defer src="calculations.js"></script>
+  <script defer src="ui.js"></script>
+</head>
+<body>
+  <main class="app-shell">
+    <header class="hero">
+      <div class="hero-copy">
+        <p class="eyebrow"><span class="eyebrow-dot" aria-hidden="true"></span> PROGRAM INSIGHTS</p>
+        <h1>여러 사업 실적 통합</h1>
+        <p class="hero-description">연도와 사업별 참여·수료 실적을 한눈에 살펴보고, 같은 기준으로 다시 계산합니다.</p>
+      </div>
+      <div class="hero-mark" aria-hidden="true"><span>실적</span><b>↗</b></div>
+    </header>
+
+    <section class="panel data-panel" aria-labelledby="data-heading">
+      <div class="section-heading data-heading-row">
+        <div>
+          <p class="section-kicker">DATA SOURCE</p>
+          <h2 id="data-heading">자료 설정</h2>
+        </div>
+        <span class="source-badge" id="sourceBadge"><span class="status-dot"></span><span id="sourceName">기본 샘플</span></span>
+      </div>
+      <div class="data-controls">
+        <label class="file-picker" for="fileInput"><span class="upload-icon" aria-hidden="true">↑</span><span><strong>CSV 파일 선택</strong><small>여러 파일을 한 자료로 통합</small></span></label>
+        <input id="fileInput" type="file" accept=".csv,text/csv" multiple>
+        <button class="button button-secondary" id="restoreSample" type="button"><span aria-hidden="true">↺</span> 샘플 복원</button>
+        <div class="data-note"><strong>파일 선택은 현재 자료를 대체합니다.</strong> 오류 검증용 파일은 다른 정상 파일과 함께 고르지 말고 단독으로 선택하세요. 제외된 행은 아래에서 확인할 수 있습니다.</div>
+      </div>
+      <p id="uploadMessage" class="message" role="status" aria-live="polite"></p>
+    </section>
+
+    <section class="panel filter-panel" aria-labelledby="filter-heading">
+      <div class="section-heading filter-heading-row">
+        <div>
+          <p class="section-kicker">YEAR FILTER</p>
+          <h2 id="filter-heading">조회 연도</h2>
+        </div>
+        <div class="filter-actions"><button id="selectAllYears" class="text-button" type="button">전체 선택</button><span aria-hidden="true">·</span><button id="clearYears" class="text-button" type="button">선택 해제</button></div>
+      </div>
+      <div id="yearOptions" class="year-options" aria-label="조회할 연도"></div>
+    </section>
+
+    <section class="overview-section" aria-labelledby="overview-heading">
+      <div class="section-heading overview-heading">
+        <div><p class="section-kicker">OVERVIEW</p><h2 id="overview-heading">핵심 지표</h2></div>
+        <p class="section-caption">선택한 연도 기준 · 유효 자료만 집계</p>
+      </div>
+      <div class="kpi-grid">
+        <article class="kpi-card kpi-primary"><div class="kpi-top"><span class="kpi-label">참여 합계</span><span class="kpi-icon" aria-hidden="true">↗</span></div><strong class="kpi-value" id="kpiParticipants">—</strong><span class="kpi-unit">명</span><span class="kpi-foot">선택 기간 누적 참여</span></article>
+        <article class="kpi-card"><div class="kpi-top"><span class="kpi-label">수료 합계</span><span class="kpi-icon icon-blue" aria-hidden="true">✓</span></div><strong class="kpi-value" id="kpiCompleted">—</strong><span class="kpi-unit">명</span><span class="kpi-foot">선택 기간 누적 수료</span></article>
+        <article class="kpi-card"><div class="kpi-top"><span class="kpi-label">전체 수료율</span><span class="kpi-icon icon-green" aria-hidden="true">%</span></div><strong class="kpi-value" id="kpiRate">—</strong><span class="kpi-unit">합계 기준</span><span class="kpi-foot">수료 합계 ÷ 참여 합계</span></article>
+        <article class="kpi-card"><div class="kpi-top"><span class="kpi-label">사업 수</span><span class="kpi-icon icon-violet" aria-hidden="true">▦</span></div><strong class="kpi-value" id="kpiBusinesses">—</strong><span class="kpi-unit">개</span><span class="kpi-foot">고유 사업 ID 기준</span></article>
+        <article class="kpi-card"><div class="kpi-top"><span class="kpi-label">선택 연도 수</span><span class="kpi-icon icon-amber" aria-hidden="true">◷</span></div><strong class="kpi-value" id="kpiYears">—</strong><span class="kpi-unit">개 연도</span><span class="kpi-foot">자료가 있는 연도 기준</span></article>
+        <article class="kpi-card"><div class="kpi-top"><span class="kpi-label">주의 항목</span><span class="kpi-icon icon-red" aria-hidden="true">!</span></div><strong class="kpi-value" id="kpiAttention">—</strong><span class="kpi-unit">건</span><span class="kpi-foot">행 수료율 70% 미만</span></article>
+      </div>
+    </section>
+
+    <section class="charts-grid" aria-label="실적 차트">
+      <article class="panel chart-card" aria-labelledby="field-heading">
+        <div class="chart-heading"><div><p class="section-kicker">PARTICIPATION MIX</p><h2 id="field-heading">분야별 참여 비중</h2></div><span class="chart-tag">참여자 · 명</span></div>
+        <p class="chart-help">각 분야가 전체 참여자에서 차지하는 비율입니다.</p>
+        <div class="pie-layout"><div class="pie-graphic" id="pieChart"></div><div class="legend-list" id="fieldLegend" aria-label="분야별 참여 비중 범례"></div></div>
+        <p class="chart-footnote">비율은 선택한 자료의 참여자 합계를 기준으로 계산합니다.</p>
+      </article>
+
+      <article class="panel chart-card" aria-labelledby="business-heading">
+        <div class="chart-heading"><div><p class="section-kicker">BUSINESS COMPARISON</p><h2 id="business-heading">사업별 참여·수료</h2></div><span class="chart-tag">인원 · 명</span></div>
+        <p class="chart-help">같은 사업의 참여자와 수료자 수를 나란히 비교합니다.</p>
+        <div class="chart-legend" aria-label="막대 범례"><span><i class="legend-swatch swatch-participants"></i>참여자</span><span><i class="legend-swatch swatch-completed"></i>수료자</span></div>
+        <div class="chart-scroll" id="businessChart"></div>
+        <p class="chart-footnote">막대 위 숫자는 인원이며, 사업 ID별로 묶어 표시합니다.</p>
+      </article>
+
+      <article class="panel chart-card trend-card" aria-labelledby="trend-heading">
+        <div class="chart-heading"><div><p class="section-kicker">YEARLY TREND</p><h2 id="trend-heading">연도별 수료율 추이</h2></div><span class="chart-tag">수료율 · %</span></div>
+        <p class="chart-help">연도별 수료자 합계를 참여자 합계로 나눈 값입니다.</p>
+        <div class="chart-legend" aria-label="추이 범례"><span><i class="legend-line"></i>합계 기준 수료율</span></div>
+        <div class="chart-scroll trend-scroll" id="trendChart"></div>
+        <p class="chart-footnote">참여자가 0명인 연도는 수료율을 계산할 수 없어 점을 표시하지 않습니다.</p>
+      </article>
+    </section>
+
+    <section class="panel table-panel" aria-labelledby="table-heading">
+      <div class="section-heading table-heading-row">
+        <div><p class="section-kicker">DETAILS</p><h2 id="table-heading">통합 실적 상세</h2><p class="section-caption">유효한 원본 행 <span id="rowCount">0</span>건</p></div>
+        <a class="button button-primary" id="downloadCsv" href="#" download="통합실적.csv"><span aria-hidden="true">↓</span> CSV 다운로드</a>
+      </div>
+      <p class="table-note">수료율은 행별 수료자 ÷ 참여자입니다. 참여와 수료가 모두 0인 행은 계산 불가로 표시됩니다.</p>
+      <div class="table-scroll" role="region" aria-label="통합 실적 상세 표" tabindex="0">
+        <table><thead><tr><th scope="col">연도</th><th scope="col">사업 ID</th><th scope="col">사업명</th><th scope="col">분야</th><th scope="col">지역</th><th class="number" scope="col">참여자수</th><th class="number" scope="col">수료자수</th><th class="number" scope="col">수료율</th><th scope="col">판정</th></tr></thead><tbody id="detailRows"></tbody></table>
+        <div id="tableEmpty" class="empty-state" hidden><span aria-hidden="true">⌕</span><strong>표시할 실적이 없습니다.</strong><p>연도를 다시 선택하거나 다른 CSV 자료를 불러오세요.</p></div>
+      </div>
+    </section>
+
+    <section class="panel excluded-panel" aria-labelledby="excluded-heading">
+      <div class="section-heading excluded-heading-row"><div><p class="section-kicker">DATA QUALITY</p><h2 id="excluded-heading">제외된 행</h2><p class="section-caption">오류 또는 중복으로 집계에서 제외된 원본 행</p></div><span class="excluded-count" id="excludedCount">0건</span></div>
+      <div id="excludedEmpty" class="excluded-empty">제외된 행이 없습니다. 불러온 자료를 기준으로 검증 결과를 표시합니다.</div>
+      <div class="excluded-list" id="excludedList"></div>
+      <details class="formula-details"><summary>수료율 계산과 0명 행 처리</summary><div><p><strong>전체·그룹 수료율</strong> = 수료자 합계 ÷ 참여자 합계 × 100. 각 사업 수료율을 단순 평균하지 않습니다.</p><p><strong>개별 행 수료율</strong> = 해당 행 수료자수 ÷ 참여자수 × 100. 참여자와 수료자가 모두 0이면 분모가 0이므로 수료율은 계산 불가이며, 행은 유효 자료에 남습니다.</p><p>참여자 0명인데 수료자가 있으면 수료자 초과로 제외됩니다. 70% 미만인 유효 행은 주의 항목으로 집계합니다.</p></div></details>
+    </section>
+
+    <footer class="page-footer"><span>교육용 가상자료를 사용한 실적 분석 예시</span><span>오프라인 사용 가능 · 자료는 이 브라우저 탭에서만 처리</span></footer>
+  </main>
+</body>
+</html>
